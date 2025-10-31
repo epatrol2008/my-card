@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>SurveyFlow — Опросы с авторизацией</title>
-  <meta name="description" content="Создание и прохождение опросов с авторизацией: Google, Email/Password, Telegram (через backend)." />
+  <meta name="description" content="Создание и прохождение опросов с авторизацией: Google, Email/Password. (Telegram будет подключён через backend без document.write)" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -143,152 +143,139 @@
 
     <div id="resTableWrap" class="card hide"></div>
   </section>
+
+  <section id="debug" class="grid hide">
+    <div class="card">
+      <h2 class="h">Debug / Тесты</h2>
+      <div class="row">
+        <button id="dbgMakeDemo" class="btn">Создать демо‑опрос</button>
+        <button id="dbgAddAnswers" class="btn">Добавить демо‑ответы</button>
+        <button id="dbgOpenResults" class="btn">Открыть результаты DEMO01</button>
+      </div>
+      <div class="muted" style="margin-top:8px">Эти кнопки доступны при параметре URL <span class="kbd">?debug=1</span>. Они создают опрос <span class="kbd">DEMO01</span>, добавляют 2 ответа и проверяют экспорт CSV.</div>
+    </div>
+  </section>
 </main>
 
-<div id="tgWidgetContainer" class="container hide">
-  <div class="card">
-    <div class="muted" style="margin-bottom:8px">Вход через Telegram</div>
-    <div id="tgWidgetMount" class="row"></div>
-  </div>
-</div>
+<!-- Telegram виджет удалён из разметки, чтобы исключить document.write -->
 
 <script type="module">
-  // --- Firebase (модульный SDK) ---
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import {
-    getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut,
-    createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signInWithCustomToken
-  } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-
-  // ✅ ТВОЙ РЕАЛЬНЫЙ КОНФИГ (из сообщения)
-  const firebaseConfig = {
-    apiKey: "AIzaSyB3uq1X2iVJFk3RdcIl3DIpnjm3y3nUVEw",
-    authDomain: "surveyflow-129a6.firebaseapp.com",
-    projectId: "surveyflow-129a6",
-    storageBucket: "surveyflow-129a6.firebasestorage.app",
-    messagingSenderId: "533639417218",
-    appId: "1:533639417218:web:4cbd520e4b04250464539b"
+  // ===== DIAGNOSTICS =====
+  console.log('[SurveyFlow] boot start');
+  const errBanner = (msg)=>{
+    let b = document.getElementById('errBanner');
+    if(!b){
+      b = document.createElement('div');
+      b.id='errBanner';
+      b.style.cssText='position:fixed;left:0;right:0;bottom:0;background:#8b1d1d;color:#fff;padding:10px 14px;z-index:9999;font:14px/1.4 Inter,system-ui;';
+      document.body.appendChild(b);
+    }
+    b.textContent = 'Ошибка: ' + msg;
   };
 
-  // Безопасная инициализация
+  // Делегация событий — более устойчива
+  const on = (type, sel, fn) => document.addEventListener(type, e=>{
+    const el = e.target.closest(sel);
+    if(el) fn(e, el);
+  });
+
+  // ===== FIREBASE (модульный SDK) =====
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+  import {
+    getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut,
+    createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail
+  } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
+
+  const firebaseConfig = {
+    apiKey: 'AIzaSyB3uq1X2iVJFk3RdcIl3DIpnjm3y3nUVEw',
+    authDomain: 'surveyflow-129a6.firebaseapp.com',
+    projectId: 'surveyflow-129a6',
+    storageBucket: 'surveyflow-129a6.firebasestorage.app',
+    messagingSenderId: '533639417218',
+    appId: '1:533639417218:web:4cbd520e4b04250464539b'
+  };
+
   let app, auth;
   try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
+    console.log('[SurveyFlow] firebase initialized');
   } catch (e) {
-    console.error('Firebase init error:', e);
-    alert('Ошибка инициализации Firebase: ' + e.message);
+    console.error(e); errBanner('Инициализация Firebase: '+e.message);
   }
 
   const googleProvider = new GoogleAuthProvider();
 
-  // --- UI элементы ---
-  const userInfo = document.getElementById('userInfo');
-  const googleBtn = document.getElementById('googleBtn');
-  const emailLoginBtn = document.getElementById('emailLoginBtn');
-  const emailRegisterBtn = document.getElementById('emailRegisterBtn');
-  const resetBtn = document.getElementById('resetBtn');
-  const tgBtn = document.getElementById('tgBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
-
-  // --- Google sign-in ---
-  googleBtn?.addEventListener('click', async () => {
+  // ===== AUTH BUTTONS =====
+  on('click', '#googleBtn', async (e)=>{
+    e.preventDefault();
     try { await signInWithPopup(auth, googleProvider); }
-    catch(e){
-      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
-        await signInWithRedirect(auth, googleProvider);
-      } else {
-        alert('Ошибка входа: '+e.message);
-      }
+    catch(err){
+      if (err.code==='auth/popup-blocked'||err.code==='auth/popup-closed-by-user') await signInWithRedirect(auth, googleProvider);
+      else errBanner(err.message);
     }
   });
 
-  // --- Email/Password ---
-  emailLoginBtn?.addEventListener('click', async () => {
+  on('click', '#emailLoginBtn', async (e)=>{
+    e.preventDefault();
     const email = prompt('Email:');
     const pass = prompt('Пароль:');
-    if (!email || !pass) return;
+    if(!email||!pass) return;
     try { await signInWithEmailAndPassword(auth, email.trim(), pass); }
-    catch (e) { alert('Ошибка входа: '+e.message); }
+    catch(err){ errBanner(err.message); }
   });
 
-  emailRegisterBtn?.addEventListener('click', async () => {
+  on('click', '#emailRegisterBtn', async (e)=>{
+    e.preventDefault();
     const email = prompt('Email (регистрация):');
     const pass = prompt('Пароль (мин. 6 символов):');
-    if (!email || !pass) return;
+    if(!email||!pass) return;
     try { await createUserWithEmailAndPassword(auth, email.trim(), pass); alert('Готово! Вы вошли.'); }
-    catch (e) { alert('Ошибка регистрации: '+e.message); }
+    catch(err){ errBanner(err.message); }
   });
 
-  resetBtn?.addEventListener('click', async () => {
+  on('click', '#resetBtn', async (e)=>{
+    e.preventDefault();
     const email = prompt('Email для сброса:');
-    if (!email) return;
+    if(!email) return;
     try { await sendPasswordResetEmail(auth, email.trim()); alert('Письмо отправлено.'); }
-    catch (e) { alert('Ошибка: '+e.message); }
+    catch(err){ errBanner(err.message); }
   });
 
-  // --- Telegram (prod): пока заглушка, активируется после настройки backend URL и имени бота
-  const TELEGRAM_VERIFY_URL = '';
-  const BOT_USERNAME = '';
-
-  tgBtn?.addEventListener('click', () => {
-    if (!BOT_USERNAME || !TELEGRAM_VERIFY_URL) {
-      alert('Telegram ещё не настроен. Сначала пришли мне URL функции и имя бота.');
-      return;
-    }
-    document.getElementById('tgWidgetContainer').classList.remove('hide');
-    const mount = document.getElementById('tgWidgetMount');
-    if (mount.dataset.ready) return;
-    mount.dataset.ready = '1';
-    const s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://telegram.org/js/telegram-widget.js?22';
-    s.setAttribute('data-telegram-login', BOT_USERNAME);
-    s.setAttribute('data-size', 'large');
-    s.setAttribute('data-userpic', 'false');
-    s.setAttribute('data-request-access', 'write');
-    s.setAttribute('data-onauth', 'onTelegramAuth(user)');
-    mount.appendChild(s);
+  // ===== TELEGRAM PLACEHOLDER =====
+  on('click', '#tgBtn', (e)=>{
+    e.preventDefault();
+    alert('Вход через Telegram будет включён после подключения backend (Firebase Functions). Сейчас отключено, чтобы не вызывать ошибку document.write.');
   });
 
-  async function signInWithTelegramPayload(tgUserPayload){
-    try {
-      const resp = await fetch(TELEGRAM_VERIFY_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(tgUserPayload) });
-      const json = await resp.json();
-      if (!resp.ok) throw new Error(json.error || 'telegramAuth failed');
-      await signInWithCustomToken(auth, json.token);
-    } catch(e){ alert('Telegram auth error: '+e.message); }
-  }
-  window.onTelegramAuth = function(user){ signInWithTelegramPayload(user); }
-
-  // --- UI state ---
-  let currentUser = null;
-  onAuthStateChanged(auth, user => {
-    currentUser = user;
-    if (user) {
-      userInfo.textContent = user.displayName || user.email || 'Пользователь';
-      logoutBtn.classList.remove('hide');
-    } else {
-      userInfo.textContent = 'Гость';
-      logoutBtn.classList.add('hide');
-    }
+  // ===== UI STATE =====
+  const userInfo = document.getElementById('userInfo');
+  const logoutBtn = document.getElementById('logoutBtn');
+  onAuthStateChanged(auth, (user)=>{
+    if(user){ userInfo.textContent = user.displayName || user.email || 'Пользователь'; logoutBtn.classList.remove('hide'); }
+    else { userInfo.textContent = 'Гость'; logoutBtn.classList.add('hide'); }
   });
-  logoutBtn?.addEventListener('click', async () => { await signOut(auth); });
+  on('click', '#logoutBtn', async (e)=>{ e.preventDefault(); await signOut(auth); });
 
-  // --- Router ---
-  const sections = { create: document.getElementById('create'), take: document.getElementById('take'), results: document.getElementById('results') };
+  // ===== ROUTER =====
+  const sections = { create: document.getElementById('create'), take: document.getElementById('take'), results: document.getElementById('results'), debug: document.getElementById('debug') };
   const tabs = [...document.querySelectorAll('.tab')];
   const takeCode = document.getElementById('takeCode');
   const resCode = document.getElementById('resCode');
+  const url = new URL(location.href);
+  const dbg = url.searchParams.get('debug')==='1';
+  if(dbg){ sections.debug.classList.remove('hide'); }
+
   const setTab = (name) => {
-    for (const k in sections) sections[k].classList.toggle('hide', k!==name);
+    for (const k in sections) if(sections[k]) sections[k].classList.toggle('hide', k!==name);
     tabs.forEach(t => t.classList.toggle('active', t.dataset.tab===name));
-    history.replaceState({}, '', location.pathname + (name==='take' && takeCode.value ? `?take=${takeCode.value}` : name==='results' && resCode.value ? `?results=${resCode.value}` : ''));
+    const qs = name==='take' && takeCode.value ? `?take=${takeCode.value}` : name==='results' && resCode.value ? `?results=${resCode.value}` : (dbg? '?debug=1' : '');
+    history.replaceState({}, '', location.pathname + qs);
     window.scrollTo({ top:0, behavior:'smooth' });
   };
-  tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
+  on('click', '.tab', (e, el)=> setTab(el.dataset.tab));
 
-  // --- LocalStorage (демо) ---
+  // ===== STORAGE (demo: LocalStorage) =====
   const LS_SURVEYS = 'surveys_v1';
   const LS_RESP = 'survey_responses_v1';
   const load = (k, f) => { try{ const r = localStorage.getItem(k); return r?JSON.parse(r):f; } catch{ return f; } };
@@ -299,12 +286,10 @@
   let surveys = load(LS_SURVEYS, {});
   let responses = load(LS_RESP, {});
 
-  // --- Builder ---
+  // ===== BUILDER =====
   const qWrap = document.getElementById('questions');
   const sTitle = document.getElementById('sTitle');
   const sDesc = document.getElementById('sDesc');
-  const addQ = document.getElementById('addQ');
-  const saveSurveyBtn = document.getElementById('saveSurvey');
   const createdBlock = document.getElementById('createdBlock');
   const codeOut = document.getElementById('codeOut');
   const copyLink = document.getElementById('copyLink');
@@ -317,7 +302,7 @@
   ];
 
   const state = { questions: [] };
-  const renderQuestions = () => {
+  function renderQuestions(){
     qWrap.innerHTML = '';
     state.questions.forEach((q, idx) => {
       const card = document.createElement('div');
@@ -365,16 +350,16 @@
       card.querySelector('[data-act="type"]').onchange = e => { q.type = e.target.value; refreshOpts(); };
       qWrap.appendChild(card);
     });
-  };
+  }
 
-  addQ?.addEventListener('click', () => { state.questions.push({id:uid(), type:'short_text', text:'Вопрос', required:true, options:['Вариант 1','Вариант 2']}); renderQuestions(); });
+  on('click', '#addQ', (e)=>{ e.preventDefault(); state.questions.push({id:uid(), type:'short_text', text:'Вопрос', required:true, options:['Вариант 1','Вариант 2']}); renderQuestions(); });
   // стартовое поле
-  addQ?.click();
+  document.getElementById('addQ').click();
 
-  saveSurveyBtn?.addEventListener('click', () => {
-    if (!currentUser) { alert('Чтобы создавать опросы, войдите.'); return; }
+  on('click', '#saveSurvey', (e)=>{
+    e.preventDefault();
     const code = codeGen();
-    const data = { code, title:sTitle.value.trim()||'Без названия', desc:sDesc.value.trim(), questions: JSON.parse(JSON.stringify(state.questions)), createdAt: new Date().toISOString(), owner: currentUser.uid };
+    const data = { code, title:sTitle.value.trim()||'Без названия', desc:sDesc.value.trim(), questions: JSON.parse(JSON.stringify(state.questions)), createdAt: new Date().toISOString(), owner: (auth.currentUser?.uid||'anon') };
     surveys[code] = data; save(LS_SURVEYS, surveys);
     responses[code] = responses[code]||[]; save(LS_RESP, responses);
     codeOut.textContent = code; createdBlock.classList.remove('hide');
@@ -385,13 +370,11 @@
     };
   });
 
-  // --- Пройти опрос ---
-  const loadSurveyBtn = document.getElementById('loadSurvey');
+  // ===== TAKE SURVEY =====
   const takeFormWrap = document.getElementById('takeFormWrap');
   function renderTake(code){
     const s = surveys[code];
     if(!s){ takeFormWrap.classList.add('hide'); alert('Опрос с таким кодом не найден'); return; }
-    if(!currentUser){ alert('Чтобы пройти опрос, войдите.'); return; }
     takeFormWrap.classList.remove('hide');
     takeFormWrap.innerHTML = `<div class="row" style="justify-content:space-between"><div><div class="h">${s.title}</div><div class="muted">${s.desc||''}</div></div><span class="pill">Код: <span class="kbd" style="margin-left:6px">${code}</span></span></div>`;
     const form = document.createElement('form');
@@ -424,29 +407,25 @@
         if(q.type==='multi'){ if(!Array.isArray(v) || v.length===0) return alert('Заполните обязательные вопросы.'); }
         else if(v===undefined || v==='') return alert('Заполните обязательные вопросы.');
       }
-      const rec = { by: currentUser.displayName||currentUser.email||currentUser.uid, at: new Date().toISOString(), answers: vals };
+      const by = (auth.currentUser?.displayName||auth.currentUser?.email||auth.currentUser?.uid||'anon');
+      const rec = { by, at: new Date().toISOString(), answers: vals };
       responses[code] = responses[code]||[]; responses[code].push(rec); save(LS_RESP, responses);
       alert('Ответ отправлен!'); takeFormWrap.classList.add('hide');
     };
     takeFormWrap.appendChild(form);
   }
-  loadSurveyBtn?.addEventListener('click', ()=>{ const c=takeCode.value.trim().toUpperCase(); renderTake(c); });
+  on('click', '#loadSurvey', (e)=>{ e.preventDefault(); const c=document.getElementById('takeCode').value.trim().toUpperCase(); renderTake(c); });
 
   // URL параметры
-  const url = new URL(location.href);
-  if(url.searchParams.get('take')){ takeCode.value = url.searchParams.get('take').toUpperCase(); setTab('take'); }
-  if(url.searchParams.get('results')){ resCode.value = url.searchParams.get('results').toUpperCase(); setTab('results'); }
+  if(url.searchParams.get('take')){ document.getElementById('takeCode').value = url.searchParams.get('take').toUpperCase(); setTab('take'); }
+  if(url.searchParams.get('results')){ document.getElementById('resCode').value = url.searchParams.get('results').toUpperCase(); setTab('results'); }
 
-  // --- Результаты ---
-  const loadResults = document.getElementById('loadResults');
+  // ===== RESULTS =====
   const resTableWrap = document.getElementById('resTableWrap');
   function renderResults(code){
     const s = surveys[code];
     const rows = responses[code]||[];
     if(!s){ resTableWrap.classList.add('hide'); return alert('Опрос с таким кодом не найден'); }
-    if(!currentUser){ return alert('Войдите'); }
-    // if(s.owner!==currentUser.uid) return alert('Нет доступа'); // включить при необходимости
-
     resTableWrap.classList.remove('hide');
     let html = `<div class="row" style="justify-content:space-between"><div><div class="h">${s.title}</div><div class="muted">создан: ${new Date(s.createdAt).toLocaleString()}</div></div><span class="pill">Код: <span class="kbd" style="margin-left:6px">${code}</span></span></div>`;
     html += '<div style="overflow:auto;margin-top:10px"><table><thead><tr><th>Пользователь</th><th>Время</th>' + s.questions.map(q=>`<th>${q.text}</th>`).join('') + '</tr></thead><tbody>';
@@ -464,15 +443,51 @@
       const headers = ['by','at',...s.questions.map(q=>q.text.replaceAll(',',' '))];
       const lines = [headers.join(',')];
       rows.forEach(r=>{ lines.push([r.by,r.at,...s.questions.map(q=>{ const v=r.answers[q.id]; return Array.isArray(v)?`"${v.join('; ')}"`:(v??''); })].join(',')); });
-      const blob = new Blob(["﻿"+lines.join('
-')],{type:'text/csv;charset=utf-8;'});
+      const blob = new Blob(["\uFEFF"+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
       const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`survey_${code}_results.csv`; a.click();
     };
   }
-  loadResults?.addEventListener('click', ()=> renderResults(resCode.value.trim().toUpperCase()));
+  on('click', '#loadResults', (e)=>{ e.preventDefault(); const c=document.getElementById('resCode').value.trim().toUpperCase(); renderResults(c); });
 
-  // Активировать первую вкладку
+  // ===== DEBUG TESTS =====
+  if(dbg){
+    const DEMO_CODE = 'DEMO01';
+    on('click', '#dbgMakeDemo', ()=>{
+      const data = {
+        code: DEMO_CODE,
+        title: 'Демо опрос',
+        desc: 'Проверка экспорта CSV',
+        createdAt: new Date().toISOString(),
+        owner: 'tester',
+        questions: [
+          { id:'q1', type:'short_text', text:'Имя', required:true },
+          { id:'q2', type:'number', text:'Возраст', required:false },
+          { id:'q3', type:'single', text:'Выберите цвет', required:true, options:['Красный','Синий','Зелёный'] },
+          { id:'q4', type:'multi', text:'Интересы', required:false, options:['Спорт','Музыка','IT'] }
+        ]
+      };
+      surveys[DEMO_CODE] = data; save(LS_SURVEYS, surveys);
+      alert('Демо-опрос создан: '+DEMO_CODE);
+    });
+
+    on('click', '#dbgAddAnswers', ()=>{
+      responses[DEMO_CODE] = responses[DEMO_CODE]||[];
+      responses[DEMO_CODE].push({ by:'user1', at:new Date().toISOString(), answers:{ q1:'Алексей', q2:30, q3:'Синий', q4:['Музыка','IT'] } });
+      responses[DEMO_CODE].push({ by:'user2', at:new Date().toISOString(), answers:{ q1:'Ирина', q2:'', q3:'Красный', q4:['Спорт'] } });
+      save(LS_RESP, responses);
+      alert('Добавлено 2 ответа для '+DEMO_CODE);
+    });
+
+    on('click', '#dbgOpenResults', ()=>{
+      document.getElementById('resCode').value = DEMO_CODE;
+      setTab('results');
+      renderResults(DEMO_CODE);
+    });
+  }
+
+  // Стартовая вкладка
   setTab('create');
+  console.log('[SurveyFlow] boot done');
 </script>
 </body>
 </html>
