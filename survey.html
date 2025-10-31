@@ -448,7 +448,7 @@
     // if(s.owner!==currentUser.uid) return alert('Нет доступа'); // включить при необходимости
 
     resTableWrap.classList.remove('hide');
-    let html = `<div class=\"row\" style=\"justify-content:space-between\"><div><div class=\"h\">${s.title}</div><div class=\"muted\">создан: ${new Date(s.createdAt).toLocaleString()}</div></div><span class=\"pill\">Код: <span class=\"kbd\" style=\"margin-left:6px\">${code}</span></span></div>`;
+    let html = `<div class="row" style="justify-content:space-between"><div><div class="h">${s.title}</div><div class="muted">создан: ${new Date(s.createdAt).toLocaleString()}</div></div><span class="pill">Код: <span class="kbd" style="margin-left:6px">${code}</span></span></div>`;
     html += '<div style="overflow:auto;margin-top:10px"><table><thead><tr><th>Пользователь</th><th>Время</th>' + s.questions.map(q=>`<th>${q.text}</th>`).join('') + '</tr></thead><tbody>';
     if(rows.length===0){ html += `<tr><td colspan="${2+s.questions.length}" class="muted">Пока нет ответов</td></tr>`; }
     rows.forEach(r=>{
