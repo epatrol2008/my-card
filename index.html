@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Портфолио — Имя Фамилия</title>
+  <meta name="description" content="Личный сайт‑визитка разработчика: проекты, навыки, контакты">
+  <link rel="preconnect" href="https://fonts.googleapis.com/">
+  <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+  <link href="index_files/css2.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-soft: #0f1a3a;
+      --text: #e9eefc;
+      --muted: #a8b2d1;
+      --primary: #86b2ff;
+      --accent: #a78bfa;
+      --card: rgba(255,255,255,.06);
+      --stroke: rgba(255,255,255,.12);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    [data-theme="light"]{
+      --bg: #f6f8ff;
+      --bg-soft: #eef2ff;
+      --text: #0c1326;
+      --muted: #42507a;
+      --primary: #1a5fff;
+      --accent: #7c3aed;
+      --card: rgba(255,255,255,.8);
+      --stroke: rgba(17,24,39,.08);
+      --shadow: 0 10px 30px rgba(31,41,55,.1);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text); background: radial-gradient(1200px 600px at 10% -10%, #1a2251, transparent 60%),
+                         radial-gradient(900px 500px at 110% 10%, #3a1f6b, transparent 50%),
+                         linear-gradient(180deg, var(--bg) 0%, #0b0f1f 100%);
+      background-attachment: fixed; line-height:1.6;
+    }
+    .container{max-width:1100px;margin:0 auto;padding:28px}
+    header{position:sticky;top:0;backdrop-filter:saturate(140%) blur(8px); background:linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,0)); border-bottom:1px solid var(--stroke); z-index:10}
+    nav{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.3px}
+    .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#60a5fa,#a78bfa); box-shadow:0 0 12px #60a5fa88}
+    .navlinks a{color:var(--muted); text-decoration:none; margin:0 10px; font-weight:500}
+    .navlinks a:hover{color:var(--text)}
+    .btn{display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;border:1px solid var(--stroke);background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); color:var(--text); text-decoration:none; box-shadow:var(--shadow)}
+    .btn:hover{transform:translateY(-1px);}
+
+    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:28px;align-items:center; padding:48px 0}
+    .tag{display:inline-block;padding:6px 10px;border:1px solid var(--stroke);border-radius:999px;color:var(--muted);font-size:12px;letter-spacing:.3px}
+    h1{font-size:44px;line-height:1.1;margin:14px 0 16px}
+    .lead{color:var(--muted);font-size:18px}
+    .cta{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
+
+    .card{background:var(--card); border:1px solid var(--stroke); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .card.pad{padding:22px}
+
+    .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding:6px 10px;border-radius:999px;border:1px solid var(--stroke)}
+    .grid{display:grid;gap:18px}
+    .grid.skills{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid.projects{grid-template-columns:repeat(3,minmax(0,1fr))}
+    @media (max-width:950px){.hero{grid-template-columns:1fr}.grid.projects{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:640px){.grid.projects{grid-template-columns:1fr}}
+
+    .project{overflow:hidden; position:relative}
+    .project .thumb{height:150px;border-bottom:1px solid var(--stroke); background:linear-gradient(135deg,#1f2937,#0f172a); display:flex;align-items:center;justify-content:center; font-weight:700; letter-spacing:.5px; color:#c7d2fe}
+    .project .thumb small{opacity:.8; font-weight:600}
+    .project .body{padding:16px}
+    .project h3{margin:6px 0 6px; font-size:18px}
+    .project p{color:var(--muted); font-size:14px; margin:0 0 10px}
+    .project .links{display:flex;gap:10px}
+
+    section{margin:34px 0}
+    section h2{font-size:24px;margin:0 0 14px}
+
+    .footer{margin:40px 0 20px; color:var(--muted); font-size:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+    .social{display:flex;gap:10px}
+    .icon{width:18px;height:18px;opacity:.9}
+
+    .theme-toggle{cursor:pointer}
+
+    /* Subtle floating gradient blob */
+    .blob{position:fixed; inset:auto -120px -120px auto; width:320px;height:320px; background:radial-gradient(closest-side,#6ea8ff,transparent 70%); filter:blur(40px); opacity:.35; pointer-events:none}
+  </style>
+</head>
+<body>
+  <div class="blob" aria-hidden="true"></div>
+  <header>
+    <div class="container">
+      <nav>
+        <div class="brand"><span class="dot"></span> Имя Фамилия</div>
+        <div class="navlinks">
+          <a href="#about">Обо мне</a>
+          <a href="#projects">Проекты</a>
+          <a href="#skills">Навыки</a>
+          <a href="#contact">Контакты</a>
+        </div>
+        <a class="btn theme-toggle" id="toggleTheme" title="Сменить тему">🌓</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div>
+        <span class="tag">Full‑stack / Indie‑dev</span>
+        <h1>Создаю аккуратные продукты, которые решают конкретные задачи</h1>
+        <p class="lead">Я — Имя, разработчик из Кипра. Люблю понятные интерфейсы, быстрый бэкенд и автоматизацию. Делаю MVP за недели, а не месяцы.</p>
+        <div class="cta">
+          <a class="btn" href="#projects">🚀 Смотреть проекты</a>
+          <a class="btn" href="mailto:you@example.com">✉️ Связаться</a>
+          <a class="btn" href="#" target="_blank" rel="noopener">⬇️ Скачать CV (PDF)</a>
+        </div>
+      </div>
+      <div class="card pad">
+        <div class="grid skills" style="margin-bottom:10px">
+          <span class="pill">⚡ Быстрые MVP</span>
+          <span class="pill">🧪 Тесты и CI</span>
+          <span class="pill">🧩 Микросервисы</span>
+          <span class="pill">🎨 UX‑минимализм</span>
+        </div>
+        <p style="color:var(--muted); margin:0">Свободен для небольших 
+стартап‑проектов: проектирование, разработка, деплой, поддержка. Работаю
+ с Python/Node, Postgres, Docker, REST/GraphQL, облака.</p>
+      </div>
+    </section>
+
+    <section id="projects">
+      <h2>Избранные проекты</h2>
+      <div class="grid projects">
+        <article class="card project">
+          <div class="thumb">Дашборд аналитики<br><small>Next.js • FastAPI • ClickHouse</small></div>
+          <div class="body">
+            <h3>Metrico</h3>
+            <p>Система метрик с real‑time графиками и алертами для e‑commerce.</p>
+            <div class="links">
+              <a class="btn" href="#" target="_blank" rel="noopener">🔗 Live</a>
+              <a class="btn" href="#" target="_blank" rel="noopener">📦 GitHub</a>
+            </div>
+          </div>
+        </article>
+        <article class="card project">
+          <div class="thumb">AI‑ассистент планирования<br><small>Python • OpenAI • Redis</small></div>
+          <div class="body">
+            <h3>SmartPlan</h3>
+            <p>Личный планировщик задач с авто‑разложением по календарю.</p>
+            <div class="links">
+              <a class="btn" href="#" target="_blank" rel="noopener">🔗 Live</a>
+              <a class="btn" href="#" target="_blank" rel="noopener">📦 GitHub</a>
+            </div>
+          </div>
+        </article>
+        <article class="card project">
+          <div class="thumb">CRM для лидогенерации<br><small>Node • Postgres • Docker</small></div>
+          <div class="body">
+            <h3>LeadBox</h3>
+            <p>Мини‑CRM: формы, статусы, воронка, веб‑хуки, Telegram‑уведомления.</p>
+            <div class="links">
+              <a class="btn" href="#" target="_blank" rel="noopener">🔗 Live</a>
+              <a class="btn" href="#" target="_blank" rel="noopener">📦 GitHub</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="skills">
+      <h2>Навыки</h2>
+      <div class="card pad">
+        <div class="grid skills">
+          <div>
+            <strong>Языки</strong><br>
+            JavaScript/TypeScript, Python, SQL
+          </div>
+          <div>
+            <strong>Фронтенд</strong><br>
+            React/Next.js, HTML/CSS, Vite
+          </div>
+          <div>
+            <strong>Бэкенд</strong><br>
+            Node (Nest/Fastify), FastAPI, Django
+          </div>
+          <div>
+            <strong>Данные</strong><br>
+            Postgres, Redis, ClickHouse
+          </div>
+          <div>
+            <strong>Инфра</strong><br>
+            Docker, Nginx, GitHub Actions
+          </div>
+          <div>
+            <strong>Другое</strong><br>
+            Webhooks, OAuth, TeleBot, Stripe
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="about">
+      <h2>Обо мне</h2>
+      <div class="card pad">
+        <p>8+ лет в разработке продуктов. Люблю быстрые итерации, 
+метрики и простые решения сложных задач. За плечами: прототипы для 
+маркетплейсов, внутренние панели для ретейла, интеграции платежей, 
+ML‑ассистенты.</p>
+      </div>
+    </section>
+
+    <section id="contact">
+      <h2>Контакты</h2>
+      <div class="card pad" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="color:var(--muted)">Открыт к сотрудничеству</div>
+          <div style="font-size:20px;font-weight:700">you@example.com</div>
+        </div>
+        <div class="social">
+          <a class="btn" href="https://github.com/yourname" target="_blank" rel="noopener" aria-label="GitHub">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a12 12 0 0 0-3.79 23.4c.6.1.82-.25.82-.57v-2.02c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.1-.74.08-.73.08-.73 1.22.09 1.86 1.26 1.86 1.26 1.08 1.85 2.83 1.32 3.52 1.01.11-.78.42-1.32.77-1.63-2.67-.3-5.48-1.34-5.48-5.95 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.17 0 0 1.01-.32 3.3 1.23.96-.27 1.98-.4 3-.41 1.02 0 2.04.14 3 .41 2.29-1.55 3.3-1.23 3.3-1.23.66 1.65.24 2.86.12 3.17.77.84 1.24 1.91 1.24 3.22 0 4.62-2.81 5.64-5.49 5.94.43.37.82 1.1.82 2.22v3.29c0 .32.21.68.83.57A12 12 0 0 0 12 .5Z"></path></svg>
+            GitHub
+          </a>
+          <a class="btn" href="https://www.linkedin.com/in/yourname" target="_blank" rel="noopener">in LinkedIn</a>
+          <a class="btn" href="https://t.me/yourname" target="_blank" rel="noopener">Telegram</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      <span>© <span id="year">2025</span> Имя Фамилия · Сделано с любовью</span>
+      <span><a href="#" class="navlinks" style="text-decoration:none;color:var(--muted)">Политика конфиденциальности</a></span>
+    </div>
+  </main>
+
+  <script>
+    // Текущий год
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Тема: сохраняем выбор пользователя
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const saved = localStorage.getItem('theme');
+    const root = document.documentElement;
+    if(saved){
+      if(saved==='light') root.setAttribute('data-theme','light');
+    } else if(!prefersDark){
+      root.setAttribute('data-theme','light');
+    }
+    document.getElementById('toggleTheme').addEventListener('click',()=>{
+      const isLight = root.getAttribute('data-theme')==='light';
+      root.setAttribute('data-theme', isLight ? '' : 'light');
+      localStorage.setItem('theme', isLight ? 'dark' : 'light');
+    });
+  </script>
+
+
+</body></html>
