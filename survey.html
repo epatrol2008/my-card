@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SurveyFlow — Опросы с авторизацией</title>
+  <meta name="description" content="Создание и прохождение опросов с авторизацией через Google (Firebase)." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0b1020;--card:#111a37;--muted:#9aa6d1;--text:#eaf0ff;--primary:#7aa2ff;--accent:#a78bfa;--stroke:rgba(255,255,255,.12);--r:16px}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui;line-height:1.5;color:var(--text);background:radial-gradient(1000px 500px at 120% -10%,#2a135f,transparent 60%),radial-gradient(800px 420px at -20% -10%,#193b7a,transparent 60%),linear-gradient(#0b1020,#0a0f1f)}
+    a{color:var(--primary)}
+    .container{max-width:1100px;margin:0 auto;padding:24px}
+    header{position:sticky;top:0;z-index:10;background:rgba(8,12,28,.6);backdrop-filter:blur(8px);border-bottom:1px solid var(--stroke)}
+    nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:700}
+    .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#60a5fa,#a78bfa);box-shadow:0 0 12px #60a5fa99}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{padding:10px 14px;border-radius:12px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);cursor:pointer}
+    .tab.active{border-color:#8daaff;background:rgba(125,170,255,.18)}
+    .grid{display:grid;gap:16px}
+    .two{grid-template-columns:1fr 1fr}
+    @media (max-width:860px){.two{grid-template-columns:1fr}}
+    .card{background:var(--card);border:1px solid var(--stroke);border-radius:var(--r);padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+    .h{margin:0 0 10px;font-size:18px}
+    .muted{color:var(--muted);font-size:14px}
+    .input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--stroke);border-radius:12px;background:#0c1430;color:var(--text)}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer}
+    .btn.primary{background:linear-gradient(180deg,rgba(125,170,255,.25),rgba(125,170,255,.15));border-color:#8daaff}
+    .btn.subtle{background:transparent}
+    .pill{display:inline-block;padding:6px 10px;border:1px solid var(--stroke);border-radius:999px;color:var(--muted);font-size:12px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--stroke);text-align:left}
+    .kbd{display:inline-flex;padding:4px 8px;border:1px solid var(--stroke);border-radius:10px;background:rgba(255,255,255,.06);font-family:ui-monospace,monospace}
+    .center{display:flex;align-items:center;justify-content:center;gap:12px}
+    .right{display:flex;justify-content:flex-end}
+    .hide{display:none}
+  </style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <nav>
+      <div class="brand"><span class="dot"></span> SurveyFlow</div>
+      <div class="tabs">
+        <button class="tab" data-tab="create">Создать опрос</button>
+        <button class="tab" data-tab="take">Пройти</button>
+        <button class="tab" data-tab="results">Результаты</button>
+      </div>
+      <div class="row">
+        <span id="userInfo" class="muted">Гость</span>
+        <button id="loginBtn" class="btn">Войти</button>
+        <button id="logoutBtn" class="btn subtle hide">Выйти</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <section id="create" class="grid">
+    <div class="card">
+      <h2 class="h">Параметры опроса</h2>
+      <div class="grid two">
+        <div>
+          <div class="muted">Название</div>
+          <input id="sTitle" class="input" value="Новый опрос" />
+        </div>
+        <div>
+          <div class="muted">Описание</div>
+          <input id="sDesc" class="input" placeholder="Необязательно" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <h2 class="h">Вопросы</h2>
+          <div class="muted">Типы: короткий текст, число, один вариант, мультивыбор</div>
+        </div>
+        <button id="addQ" class="btn">+ Добавить вопрос</button>
+      </div>
+      <div id="questions" class="grid"></div>
+    </div>
+
+    <div class="row">
+      <button id="saveSurvey" class="btn primary">💾 Сохранить и выдать код</button>
+      <div id="createdBlock" class="row hide">
+        <span class="pill">Код: <span id="codeOut" class="kbd" style="margin-left:6px"></span></span>
+        <button id="copyLink" class="btn">Скопировать ссылку</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="take" class="grid hide">
+    <div class="card">
+      <h2 class="h">Пройти опрос</h2>
+      <div class="grid two">
+        <div>
+          <div class="muted">Код опроса</div>
+          <input id="takeCode" class="input" placeholder="например: 7F3A9C" />
+        </div>
+        <div class="right" style="align-items:end">
+          <button id="loadSurvey" class="btn">Загрузить</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="takeFormWrap" class="card hide"></div>
+  </section>
+
+  <section id="results" class="grid hide">
+    <div class="card">
+      <h2 class="h">Результаты</h2>
+      <div class="grid two">
+        <div>
+          <div class="muted">Код опроса</div>
+          <input id="resCode" class="input" placeholder="например: 7F3A9C" />
+        </div>
+        <div class="right" style="align-items:end">
+          <button id="loadResults" class="btn">Открыть</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="resTableWrap" class="card hide"></div>
+  </section>
+</main>
+
+<script type="module">
+  // --- Firebase Auth (Google) ---
+  // 1) Создай проект на https://console.firebase.google.com
+  // 2) Включи Authentication → Sign-in method → Google
+  // 3) Создай Web App и вставь конфиг ниже
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+  //const firebaseConfig = {
+  //  apiKey: "PASTE_API_KEY",
+  //  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
+  //  projectId: "PASTE_PROJECT_ID",
+  //  appId: "PASTE_APP_ID"
+  //};
+
+    const firebaseConfig = {
+    apiKey: "AIzaSyB3uq1X2iVJFk3RdcIl3DIpnjm3y3nUVEw",
+    authDomain: "surveyflow-129a6.firebaseapp.com",
+    projectId: "surveyflow-129a6",
+    storageBucket: "surveyflow-129a6.firebasestorage.app",
+    messagingSenderId: "533639417218",
+    appId: "1:533639417218:web:4cbd520e4b04250464539b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  const userInfo = document.getElementById('userInfo');
+  const loginBtn = document.getElementById('loginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  loginBtn.onclick = async () => {
+    try { await signInWithPopup(auth, provider); } catch(e){ alert("Ошибка входа: "+e.message); }
+  };
+  logoutBtn.onclick = async () => { await signOut(auth); };
+
+  let currentUser = null;
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
+    if (user) {
+      userInfo.textContent = user.displayName || user.email;
+      loginBtn.classList.add('hide');
+      logoutBtn.classList.remove('hide');
+    } else {
+      userInfo.textContent = 'Гость';
+      loginBtn.classList.remove('hide');
+      logoutBtn.classList.add('hide');
+    }
+  });
+
+  // --- Простая маршрутизация вкладок ---
+  const sections = { create: document.getElementById('create'), take: document.getElementById('take'), results: document.getElementById('results') };
+  const tabs = [...document.querySelectorAll('.tab')];
+  const setTab = (name) => {
+    for (const k in sections) sections[k].classList.toggle('hide', k!==name);
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab===name));
+    history.replaceState({}, '', location.pathname + (name==='take' && takeCode.value ? `?take=${takeCode.value}` : name==='results' && resCode.value ? `?results=${resCode.value}` : ''));
+  };
+  tabs.forEach(t => t.onclick = () => setTab(t.dataset.tab));
+
+  // --- Хранилище (localStorage) ---
+  const LS_SURVEYS = 'surveys_v1';
+  const LS_RESP = 'survey_responses_v1';
+  const load = (k, f) => { try{ const r = localStorage.getItem(k); return r?JSON.parse(r):f; } catch{ return f; } };
+  const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  const uid = () => Math.random().toString(36).slice(2,8);
+  const codeGen = () => Math.random().toString(36).slice(2,8).toUpperCase();
+
+  let surveys = load(LS_SURVEYS, {}); // code -> survey
+  let responses = load(LS_RESP, {}); // code -> [ {by, at, answers: {qid: val}} ]
+
+  const qWrap = document.getElementById('questions');
+  const sTitle = document.getElementById('sTitle');
+  const sDesc = document.getElementById('sDesc');
+  const addQ = document.getElementById('addQ');
+  const saveSurveyBtn = document.getElementById('saveSurvey');
+  const createdBlock = document.getElementById('createdBlock');
+  const codeOut = document.getElementById('codeOut');
+  const copyLink = document.getElementById('copyLink');
+
+  const TYPES = [
+    {id:'short_text', label:'Короткий ответ'},
+    {id:'number', label:'Число'},
+    {id:'single', label:'Выбор одного'},
+    {id:'multi', label:'Мультивыбор'}
+  ];
+
+  const state = { questions: [] };
+  const renderQuestions = () => {
+    qWrap.innerHTML = '';
+    state.questions.forEach((q, idx) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="row" style="justify-content:space-between">
+          <div class="muted">Вопрос #${idx+1}</div>
+          <div class="row">
+            <label class="muted" style="display:flex;align-items:center;gap:6px">
+              <input type="checkbox" ${q.required?'checked':''} data-act="req"/>
+              Обязательный
+            </label>
+            <button class="btn subtle" data-act="del">Удалить</button>
+          </div>
+        </div>
+        <div class="grid two" style="margin-top:10px">
+          <input class="input" data-act="text" value="${q.text}" />
+          <select class="input" data-act="type">${TYPES.map(t=>`<option value="${t.id}" ${t.id===q.type?'selected':''}>${t.label}</option>`).join('')}</select>
+        </div>
+        <div data-box="options" class="grid" style="margin-top:10px"></div>
+      `;
+      const box = card.querySelector('[data-box="options"]');
+      const refreshOpts = () => {
+        box.innerHTML = '';
+        if(q.type==='single' || q.type==='multi'){
+          (q.options||[]).forEach((opt,i)=>{
+            const row = document.createElement('div');
+            row.className = 'row';
+            row.innerHTML = `<input class="input" value="${opt}"><button class="btn subtle">−</button>`;
+            row.lastChild.onclick = ()=>{ q.options.splice(i,1); refreshOpts(); };
+            row.firstChild.oninput = (e)=>{ q.options[i] = e.target.value; };
+            box.appendChild(row);
+          });
+          const add = document.createElement('button');
+          add.className='btn'; add.textContent='+ Добавить вариант';
+          add.onclick = ()=>{ q.options = q.options||[]; q.options.push('Вариант '+((q.options.length||0)+1)); refreshOpts(); };
+          box.appendChild(add);
+        }
+      };
+      refreshOpts();
+
+      card.querySelector('[data-act="req"]').onchange = e => q.required = e.target.checked;
+      card.querySelector('[data-act="del"]').onclick = () => { state.questions.splice(idx,1); renderQuestions(); };
+      card.querySelector('[data-act="text"]').oninput = e => q.text = e.target.value;
+      card.querySelector('[data-act="type"]').onchange = e => { q.type = e.target.value; refreshOpts(); };
+      qWrap.appendChild(card);
+    });
+  };
+
+  addQ.onclick = () => { state.questions.push({id:uid(), type:'short_text', text:'Вопрос', required:true, options:['Вариант 1','Вариант 2']}); renderQuestions(); };
+  // стартовое поле
+  addQ.click();
+
+  saveSurveyBtn.onclick = () => {
+    if (!currentUser) { alert('Чтобы создавать опросы, войдите через Google'); return; }
+    const code = codeGen();
+    const data = { code, title:sTitle.value.trim()||'Без названия', desc:sDesc.value.trim(), questions: JSON.parse(JSON.stringify(state.questions)), createdAt: new Date().toISOString(), owner: currentUser.uid };
+    surveys[code] = data; save(LS_SURVEYS, surveys);
+    responses[code] = responses[code]||[]; save(LS_RESP, responses);
+    codeOut.textContent = code; createdBlock.classList.remove('hide');
+    copyLink.onclick = async ()=>{
+      const link = location.origin+location.pathname+`?take=${code}`;
+      await navigator.clipboard.writeText(link);
+      copyLink.textContent = 'Скопировано!'; setTimeout(()=>copyLink.textContent='Скопировать ссылку',1200);
+    };
+  };
+
+  // --- Прохождение опроса ---
+  const takeCode = document.getElementById('takeCode');
+  const loadSurveyBtn = document.getElementById('loadSurvey');
+  const takeFormWrap = document.getElementById('takeFormWrap');
+
+  function renderTake(code){
+    const s = surveys[code];
+    if(!s){ takeFormWrap.classList.add('hide'); alert('Опрос с таким кодом не найден'); return; }
+    if(!currentUser){ alert('Чтобы пройти опрос, войдите через Google'); return; }
+    takeFormWrap.classList.remove('hide');
+    takeFormWrap.innerHTML = `<div class="row" style="justify-content:space-between"><div><div class="h">${s.title}</div><div class="muted">${s.desc||''}</div></div><span class="pill">Код: <span class="kbd" style="margin-left:6px">${code}</span></span></div>`;
+    const form = document.createElement('form');
+    form.className='grid';
+    const vals = {};
+    s.questions.forEach(q=>{
+      const block=document.createElement('div');
+      block.innerHTML = `<div class="muted">${q.text} ${q.required?'<span style="color:#ffb4d6">*</span>':''}</div>`;
+      if(q.type==='short_text'){
+        const i=document.createElement('input'); i.className='input'; i.placeholder='Ваш ответ'; i.oninput=e=>vals[q.id]=e.target.value; block.appendChild(i);
+      } else if(q.type==='number'){
+        const i=document.createElement('input'); i.type='number'; i.className='input'; i.oninput=e=>vals[q.id]=e.target.value===''?"":Number(e.target.value); block.appendChild(i);
+      } else if(q.type==='single'){
+        const wrap=document.createElement('div'); wrap.className='row';
+        (q.options||[]).forEach(opt=>{ const b=document.createElement('button'); b.type='button'; b.className='btn'; b.textContent=opt; b.onclick=()=>{ vals[q.id]=opt; [...wrap.children].forEach(x=>x.classList.remove('primary')); b.classList.add('primary'); }; wrap.appendChild(b); });
+        block.appendChild(wrap);
+      } else if(q.type==='multi'){
+        const wrap=document.createElement('div'); wrap.className='row'; const arr=[]; vals[q.id]=arr;
+        (q.options||[]).forEach(opt=>{ const b=document.createElement('button'); b.type='button'; b.className='btn'; b.textContent=opt; b.onclick=()=>{ const i=arr.indexOf(opt); if(i>=0){arr.splice(i,1); b.classList.remove('primary');} else {arr.push(opt); b.classList.add('primary');} }; wrap.appendChild(b); });
+        block.appendChild(wrap);
+      }
+      form.appendChild(block);
+    });
+    const submit=document.createElement('button'); submit.className='btn primary'; submit.textContent='Отправить ответы'; submit.type='submit'; form.appendChild(submit);
+    form.onsubmit=(e)=>{
+      e.preventDefault();
+      // валидация
+      for(const q of s.questions){
+        const v = vals[q.id];
+        if(!q.required) continue;
+        if(q.type==='multi'){ if(!Array.isArray(v) || v.length===0) return alert('Заполните обязательные вопросы.'); }
+        else if(v===undefined || v==='') return alert('Заполните обязательные вопросы.');
+      }
+      const rec = { by: currentUser.displayName||currentUser.email||currentUser.uid, at: new Date().toISOString(), answers: vals };
+      responses[code] = responses[code]||[]; responses[code].push(rec); save(LS_RESP, responses);
+      alert('Ответ отправлен!'); takeFormWrap.classList.add('hide');
+    };
+    takeFormWrap.appendChild(form);
+  }
+
+  loadSurveyBtn.onclick = ()=>{ renderTake(takeCode.value.trim().toUpperCase()); };
+
+  // URL параметр ?take=CODE
+  const url = new URL(location.href);
+  if(url.searchParams.get('take')){ takeCode.value = url.searchParams.get('take').toUpperCase(); setTab('take'); }
+  if(url.searchParams.get('results')){ resCode.value = url.searchParams.get('results').toUpperCase(); setTab('results'); }
+
+  // --- Результаты ---
+  const resCode = document.getElementById('resCode');
+  const loadResults = document.getElementById('loadResults');
+  const resTableWrap = document.getElementById('resTableWrap');
+
+  function renderResults(code){
+    const s = surveys[code];
+    const rows = responses[code]||[];
+    if(!s){ resTableWrap.classList.add('hide'); return alert('Опрос с таким кодом не найден'); }
+    if(!currentUser){ return alert('Войдите через Google'); }
+    // Владелец видит всё; при желании можно ограничить: if(s.owner!==currentUser.uid) alert('Нет доступа')
+
+    resTableWrap.classList.remove('hide');
+    let html = `<div class="row" style="justify-content:space-between"><div><div class="h">${s.title}</div><div class="muted">создан: ${new Date(s.createdAt).toLocaleString()}</div></div><span class="pill">Код: <span class="kbd" style="margin-left:6px">${code}</span></span></div>`;
+    html += '<div style="overflow:auto;margin-top:10px"><table><thead><tr><th>Пользователь</th><th>Время</th>' + s.questions.map(q=>`<th>${q.text}</th>`).join('') + '</tr></thead><tbody>';
+    if(rows.length===0){ html += `<tr><td colspan="${2+s.questions.length}" class="muted">Пока нет ответов</td></tr>`; }
+    rows.forEach(r=>{
+      html += `<tr><td>${r.by||''}</td><td>${new Date(r.at).toLocaleString()}</td>` + s.questions.map(q=>{
+        const v=r.answers[q.id]; return `<td>${Array.isArray(v)?v.join(', '):(v??'')}</td>`;
+      }).join('') + '</tr>';
+    });
+    html += '</tbody></table></div>';
+
+    html += '<div class="right" style="margin-top:10px"><button id="csvBtn" class="btn">⬇️ Экспорт CSV</button></div>';
+    resTableWrap.innerHTML = html;
+
+    document.getElementById('csvBtn').onclick = ()=>{
+      const headers = ['by','at',...s.questions.map(q=>q.text.replaceAll(',',' '))];
+      const lines = [headers.join(',')];
+      rows.forEach(r=>{ lines.push([r.by,r.at,...s.questions.map(q=>{ const v=r.answers[q.id]; return Array.isArray(v)?`"${v.join('; ')}"`:(v??''); })].join(',')); });
+      const blob = new Blob(["\uFEFF"+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`survey_${code}_results.csv`; a.click();
+    };
+  }
+  loadResults.onclick = ()=> renderResults(resCode.value.trim().toUpperCase());
+
+  // Активировать первую вкладку
+  setTab('create');
+</script>
+
+</body>
+</html>
