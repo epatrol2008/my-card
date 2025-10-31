@@ -2,43 +2,54 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>SurveyFlow — Опросы с авторизацией</title>
-  <meta name="description" content="Создание и прохождение опросов с авторизацией через Google (Firebase)." />
+  <meta name="description" content="Создание и прохождение опросов с авторизацией: Google, Email/Password, Telegram (через backend)." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root{--bg:#0b1020;--card:#111a37;--muted:#9aa6d1;--text:#eaf0ff;--primary:#7aa2ff;--accent:#a78bfa;--stroke:rgba(255,255,255,.12);--r:16px}
+    :root{
+      --bg:#0b1020;--card:#111a37;--muted:#9aa6d1;--text:#eaf0ff;--primary:#7aa2ff;--accent:#a78bfa;--stroke:rgba(255,255,255,.12);--r:16px;
+      --pad:clamp(14px,2.5vw,22px);
+    }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui;line-height:1.5;color:var(--text);background:radial-gradient(1000px 500px at 120% -10%,#2a135f,transparent 60%),radial-gradient(800px 420px at -20% -10%,#193b7a,transparent 60%),linear-gradient(#0b1020,#0a0f1f)}
-    a{color:var(--primary)}
-    .container{max-width:1100px;margin:0 auto;padding:24px}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;line-height:1.55;color:var(--text);
+      background:radial-gradient(900px 400px at 110% -10%,#2a135f,transparent 60%),
+                 radial-gradient(700px 360px at -20% -10%,#193b7a,transparent 60%),
+                 linear-gradient(#0b1020,#0a0f1f);
+      -webkit-tap-highlight-color: transparent;
+    }
+    a{color:var(--primary);text-decoration:none}
+    .container{max-width:1100px;margin:0 auto;padding:var(--pad)}
     header{position:sticky;top:0;z-index:10;background:rgba(8,12,28,.6);backdrop-filter:blur(8px);border-bottom:1px solid var(--stroke)}
-    nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:700}
+    nav{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:clamp(14px,2.5vw,18px)}
     .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#60a5fa,#a78bfa);box-shadow:0 0 12px #60a5fa99}
     .tabs{display:flex;gap:8px;flex-wrap:wrap}
-    .tab{padding:10px 14px;border-radius:12px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);cursor:pointer}
+    .tab{padding:10px 14px;border-radius:12px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);cursor:pointer;font-size:14px}
     .tab.active{border-color:#8daaff;background:rgba(125,170,255,.18)}
     .grid{display:grid;gap:16px}
     .two{grid-template-columns:1fr 1fr}
     @media (max-width:860px){.two{grid-template-columns:1fr}}
-    .card{background:var(--card);border:1px solid var(--stroke);border-radius:var(--r);padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
-    .h{margin:0 0 10px;font-size:18px}
-    .muted{color:var(--muted);font-size:14px}
-    .input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--stroke);border-radius:12px;background:#0c1430;color:var(--text)}
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer}
+    .card{background:var(--card);border:1px solid var(--stroke);border-radius:var(--r);padding:var(--pad);box-shadow:0 12px 30px rgba(0,0,0,.35)}
+    .h{margin:0 0 8px;font-size:clamp(18px,2.6vw,22px)}
+    .muted{color:var(--muted);font-size:clamp(12px,2vw,14px)}
+    .input,select,textarea{width:100%;padding:12px;border:1px solid var(--stroke);border-radius:14px;background:#0c1430;color:var(--text);font-size:16px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .right{display:flex;justify-content:flex-end}
+    .btn{padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;touch-action:manipulation}
     .btn.primary{background:linear-gradient(180deg,rgba(125,170,255,.25),rgba(125,170,255,.15));border-color:#8daaff}
     .btn.subtle{background:transparent}
+    .btn.block{width:100%}
     .pill{display:inline-block;padding:6px 10px;border:1px solid var(--stroke);border-radius:999px;color:var(--muted);font-size:12px}
     table{width:100%;border-collapse:collapse}
-    th,td{padding:10px 12px;border-bottom:1px solid var(--stroke);text-align:left}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--stroke);text-align:left;vertical-align:top}
     .kbd{display:inline-flex;padding:4px 8px;border:1px solid var(--stroke);border-radius:10px;background:rgba(255,255,255,.06);font-family:ui-monospace,monospace}
-    .center{display:flex;align-items:center;justify-content:center;gap:12px}
-    .right{display:flex;justify-content:flex-end}
     .hide{display:none}
+    /* крупные клики по кнопкам на мобилках */
+    button{min-height:44px}
   </style>
 </head>
 <body>
@@ -51,9 +62,13 @@
         <button class="tab" data-tab="take">Пройти</button>
         <button class="tab" data-tab="results">Результаты</button>
       </div>
-      <div class="row">
+      <div class="row" style="gap:8px">
         <span id="userInfo" class="muted">Гость</span>
-        <button id="loginBtn" class="btn">Войти</button>
+        <button id="googleBtn" class="btn">Google</button>
+        <button id="emailLoginBtn" class="btn subtle">Email</button>
+        <button id="emailRegisterBtn" class="btn subtle">Регистрация</button>
+        <button id="resetBtn" class="btn subtle">Сброс</button>
+        <button id="tgBtn" class="btn">Telegram</button>
         <button id="logoutBtn" class="btn subtle hide">Выйти</button>
       </div>
     </nav>
@@ -131,68 +146,140 @@
   </section>
 </main>
 
+<!-- Telegram login widget (кнопка появится при нажатии TG в шапке) -->
+<div id="tgWidgetContainer" class="container hide">
+  <div class="card">
+    <div class="muted" style="margin-bottom:8px">Вход через Telegram</div>
+    <div id="tgWidgetMount" class="row"></div>
+  </div>
+</div>
+
 <script type="module">
-  // --- Firebase Auth (Google) ---
-  // 1) Создай проект на https://console.firebase.google.com
-  // 2) Включи Authentication → Sign-in method → Google
-  // 3) Создай Web App и вставь конфиг ниже
+  // --- Firebase Auth (Google + Email/Password + Custom Token из Telegram) ---
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  import {
+    getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut,
+    createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signInWithCustomToken
+  } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-  //const firebaseConfig = {
-  //  apiKey: "PASTE_API_KEY",
-  //  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
-  //  projectId: "PASTE_PROJECT_ID",
-  //  appId: "PASTE_APP_ID"
-  //};
-
-    const firebaseConfig = {
-    apiKey: "AIzaSyB3uq1X2iVJFk3RdcIl3DIpnjm3y3nUVEw",
-    authDomain: "surveyflow-129a6.firebaseapp.com",
-    projectId: "surveyflow-129a6",
-    storageBucket: "surveyflow-129a6.firebasestorage.app",
-    messagingSenderId: "533639417218",
-    appId: "1:533639417218:web:4cbd520e4b04250464539b"
+  // TODO: ВСТАВЬ СВОЙ КОНФИГ ОТСЮДА (из Firebase Console → Web App)
+  const firebaseConfig = {
+    apiKey: "PASTE_API_KEY",
+    authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
+    projectId: "PASTE_PROJECT_ID",
+    appId: "PASTE_APP_ID"
   };
-
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const provider = new GoogleAuthProvider();
+  const googleProvider = new GoogleAuthProvider();
 
   const userInfo = document.getElementById('userInfo');
-  const loginBtn = document.getElementById('loginBtn');
+  const googleBtn = document.getElementById('googleBtn');
+  const emailLoginBtn = document.getElementById('emailLoginBtn');
+  const emailRegisterBtn = document.getElementById('emailRegisterBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const tgBtn = document.getElementById('tgBtn');
   const logoutBtn = document.getElementById('logoutBtn');
 
-  loginBtn.onclick = async () => {
-    try { await signInWithPopup(auth, provider); } catch(e){ alert("Ошибка входа: "+e.message); }
+  // === Google sign-in (с фолбэком на redirect, если popup блокируется)
+  googleBtn.onclick = async () => {
+    try { await signInWithPopup(auth, googleProvider); }
+    catch(e){
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') { await signInWithRedirect(auth, googleProvider); }
+      else alert('Ошибка входа: '+e.message);
+    }
   };
-  logoutBtn.onclick = async () => { await signOut(auth); };
 
+  // === Email/Password ===
+  emailLoginBtn.onclick = async () => {
+    const email = prompt('Email:');
+    const pass = prompt('Пароль:');
+    if (!email || !pass) return;
+    try { await signInWithEmailAndPassword(auth, email.trim(), pass); }
+    catch (e) { alert('Ошибка входа: '+e.message); }
+  };
+  emailRegisterBtn.onclick = async () => {
+    const email = prompt('Email (регистрация):');
+    const pass = prompt('Пароль (мин. 6 символов):');
+    if (!email || !pass) return;
+    try { await createUserWithEmailAndPassword(auth, email.trim(), pass); alert('Готово! Вы вошли.'); }
+    catch (e) { alert('Ошибка регистрации: '+e.message); }
+  };
+  resetBtn.onclick = async () => {
+    const email = prompt('Email для сброса:');
+    if (!email) return;
+    try { await sendPasswordResetEmail(auth, email.trim()); alert('Письмо отправлено.'); }
+    catch (e) { alert('Ошибка: '+e.message); }
+  };
+
+  // === Telegram (prod): обмен user-пакета на Firebase custom token через backend ===
+  const TELEGRAM_VERIFY_URL = 'https://YOUR_REGION-YOUR_PROJECT.cloudfunctions.net/telegramAuth'; // замените на URL вашей функции
+
+  async function signInWithTelegramPayload(tgUserPayload){
+    try {
+      const resp = await fetch(TELEGRAM_VERIFY_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(tgUserPayload) });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || 'telegramAuth failed');
+      await signInWithCustomToken(auth, json.token);
+    } catch(e){ alert('Telegram auth error: '+e.message); }
+  }
+
+  // Кнопка «Telegram» показывает виджет и подписывается на событие authorize
+  tgBtn.onclick = () => {
+    document.getElementById('tgWidgetContainer').classList.remove('hide');
+    const mount = document.getElementById('tgWidgetMount');
+    if (mount.dataset.ready) return; // уже встроен
+    mount.dataset.ready = '1';
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://telegram.org/js/telegram-widget.js?22';
+    s.setAttribute('data-telegram-login', 'YOUR_BOT_USERNAME_WITHOUT_AT'); // <-- замени на имя бота без @
+    s.setAttribute('data-size', 'large');
+    s.setAttribute('data-userpic', 'false');
+    s.setAttribute('data-request-access', 'write');
+    // вместо data-auth-url используем data-onauth → вызовет window.onTelegramAuth
+    s.setAttribute('data-onauth', 'onTelegramAuth(user)');
+    mount.appendChild(s);
+  };
+
+  // Глобальная функция для виджета Telegram
+  window.onTelegramAuth = function(user){
+    // user содержит {id, first_name, username, photo_url?, auth_date, hash}
+    // Отправляем на backend для проверки подписи и получения Firebase custom token
+    signInWithTelegramPayload(user);
+  }
+
+  // === UI state ===
   let currentUser = null;
   onAuthStateChanged(auth, user => {
     currentUser = user;
     if (user) {
-      userInfo.textContent = user.displayName || user.email;
-      loginBtn.classList.add('hide');
+      userInfo.textContent = user.displayName || user.email || 'Пользователь';
+      googleBtn.classList.add('subtle');
       logoutBtn.classList.remove('hide');
     } else {
       userInfo.textContent = 'Гость';
-      loginBtn.classList.remove('hide');
+      googleBtn.classList.remove('subtle');
       logoutBtn.classList.add('hide');
     }
   });
 
+  logoutBtn.onclick = async () => { await signOut(auth); };
+
   // --- Простая маршрутизация вкладок ---
   const sections = { create: document.getElementById('create'), take: document.getElementById('take'), results: document.getElementById('results') };
   const tabs = [...document.querySelectorAll('.tab')];
+  const takeCode = document.getElementById('takeCode');
+  const resCode = document.getElementById('resCode');
   const setTab = (name) => {
     for (const k in sections) sections[k].classList.toggle('hide', k!==name);
     tabs.forEach(t => t.classList.toggle('active', t.dataset.tab===name));
     history.replaceState({}, '', location.pathname + (name==='take' && takeCode.value ? `?take=${takeCode.value}` : name==='results' && resCode.value ? `?results=${resCode.value}` : ''));
+    window.scrollTo({ top:0, behavior:'smooth' });
   };
   tabs.forEach(t => t.onclick = () => setTab(t.dataset.tab));
 
-  // --- Хранилище (localStorage) ---
+  // --- LocalStorage (демо хранилище) ---
   const LS_SURVEYS = 'surveys_v1';
   const LS_RESP = 'survey_responses_v1';
   const load = (k, f) => { try{ const r = localStorage.getItem(k); return r?JSON.parse(r):f; } catch{ return f; } };
@@ -203,6 +290,7 @@
   let surveys = load(LS_SURVEYS, {}); // code -> survey
   let responses = load(LS_RESP, {}); // code -> [ {by, at, answers: {qid: val}} ]
 
+  // --- Конструктор опроса ---
   const qWrap = document.getElementById('questions');
   const sTitle = document.getElementById('sTitle');
   const sDesc = document.getElementById('sDesc');
@@ -240,8 +328,8 @@
           <input class="input" data-act="text" value="${q.text}" />
           <select class="input" data-act="type">${TYPES.map(t=>`<option value="${t.id}" ${t.id===q.type?'selected':''}>${t.label}</option>`).join('')}</select>
         </div>
-        <div data-box="options" class="grid" style="margin-top:10px"></div>
-      `;
+        <div data-box="options" class="grid" style="margin-top:10px"></div>`;
+
       const box = card.querySelector('[data-box="options"]');
       const refreshOpts = () => {
         box.innerHTML = '';
@@ -275,7 +363,7 @@
   addQ.click();
 
   saveSurveyBtn.onclick = () => {
-    if (!currentUser) { alert('Чтобы создавать опросы, войдите через Google'); return; }
+    if (!currentUser) { alert('Чтобы создавать опросы, войдите.'); return; }
     const code = codeGen();
     const data = { code, title:sTitle.value.trim()||'Без названия', desc:sDesc.value.trim(), questions: JSON.parse(JSON.stringify(state.questions)), createdAt: new Date().toISOString(), owner: currentUser.uid };
     surveys[code] = data; save(LS_SURVEYS, surveys);
@@ -289,14 +377,12 @@
   };
 
   // --- Прохождение опроса ---
-  const takeCode = document.getElementById('takeCode');
   const loadSurveyBtn = document.getElementById('loadSurvey');
   const takeFormWrap = document.getElementById('takeFormWrap');
-
   function renderTake(code){
     const s = surveys[code];
     if(!s){ takeFormWrap.classList.add('hide'); alert('Опрос с таким кодом не найден'); return; }
-    if(!currentUser){ alert('Чтобы пройти опрос, войдите через Google'); return; }
+    if(!currentUser){ alert('Чтобы пройти опрос, войдите.'); return; }
     takeFormWrap.classList.remove('hide');
     takeFormWrap.innerHTML = `<div class="row" style="justify-content:space-between"><div><div class="h">${s.title}</div><div class="muted">${s.desc||''}</div></div><span class="pill">Код: <span class="kbd" style="margin-left:6px">${code}</span></span></div>`;
     const form = document.createElement('form');
@@ -320,10 +406,9 @@
       }
       form.appendChild(block);
     });
-    const submit=document.createElement('button'); submit.className='btn primary'; submit.textContent='Отправить ответы'; submit.type='submit'; form.appendChild(submit);
+    const submit=document.createElement('button'); submit.className='btn primary block'; submit.textContent='Отправить ответы'; submit.type='submit'; form.appendChild(submit);
     form.onsubmit=(e)=>{
       e.preventDefault();
-      // валидация
       for(const q of s.questions){
         const v = vals[q.id];
         if(!q.required) continue;
@@ -336,28 +421,25 @@
     };
     takeFormWrap.appendChild(form);
   }
+  loadSurveyBtn.onclick = ()=>{ const c=takeCode.value.trim().toUpperCase(); renderTake(c); };
 
-  loadSurveyBtn.onclick = ()=>{ renderTake(takeCode.value.trim().toUpperCase()); };
-
-  // URL параметр ?take=CODE
+  // URL параметры
   const url = new URL(location.href);
   if(url.searchParams.get('take')){ takeCode.value = url.searchParams.get('take').toUpperCase(); setTab('take'); }
   if(url.searchParams.get('results')){ resCode.value = url.searchParams.get('results').toUpperCase(); setTab('results'); }
 
   // --- Результаты ---
-  const resCode = document.getElementById('resCode');
   const loadResults = document.getElementById('loadResults');
   const resTableWrap = document.getElementById('resTableWrap');
-
   function renderResults(code){
     const s = surveys[code];
     const rows = responses[code]||[];
     if(!s){ resTableWrap.classList.add('hide'); return alert('Опрос с таким кодом не найден'); }
-    if(!currentUser){ return alert('Войдите через Google'); }
-    // Владелец видит всё; при желании можно ограничить: if(s.owner!==currentUser.uid) alert('Нет доступа')
+    if(!currentUser){ return alert('Войдите'); }
+    // при желании ограничить доступ владельцем: if(s.owner!==currentUser.uid) return alert('Нет доступа');
 
     resTableWrap.classList.remove('hide');
-    let html = `<div class="row" style="justify-content:space-between"><div><div class="h">${s.title}</div><div class="muted">создан: ${new Date(s.createdAt).toLocaleString()}</div></div><span class="pill">Код: <span class="kbd" style="margin-left:6px">${code}</span></span></div>`;
+    let html = `<div class=\"row\" style=\"justify-content:space-between\"><div><div class=\"h\">${s.title}</div><div class=\"muted\">создан: ${new Date(s.createdAt).toLocaleString()}</div></div><span class=\"pill\">Код: <span class=\"kbd\" style=\"margin-left:6px\">${code}</span></span></div>`;
     html += '<div style="overflow:auto;margin-top:10px"><table><thead><tr><th>Пользователь</th><th>Время</th>' + s.questions.map(q=>`<th>${q.text}</th>`).join('') + '</tr></thead><tbody>';
     if(rows.length===0){ html += `<tr><td colspan="${2+s.questions.length}" class="muted">Пока нет ответов</td></tr>`; }
     rows.forEach(r=>{
@@ -366,7 +448,6 @@
       }).join('') + '</tr>';
     });
     html += '</tbody></table></div>';
-
     html += '<div class="right" style="margin-top:10px"><button id="csvBtn" class="btn">⬇️ Экспорт CSV</button></div>';
     resTableWrap.innerHTML = html;
 
@@ -374,7 +455,8 @@
       const headers = ['by','at',...s.questions.map(q=>q.text.replaceAll(',',' '))];
       const lines = [headers.join(',')];
       rows.forEach(r=>{ lines.push([r.by,r.at,...s.questions.map(q=>{ const v=r.answers[q.id]; return Array.isArray(v)?`"${v.join('; ')}"`:(v??''); })].join(',')); });
-      const blob = new Blob(["\uFEFF"+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+      const blob = new Blob(["﻿"+lines.join('
+')],{type:'text/csv;charset=utf-8;'});
       const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`survey_${code}_results.csv`; a.click();
     };
   }
@@ -383,6 +465,5 @@
   // Активировать первую вкладку
   setTab('create');
 </script>
-
 </body>
 </html>
