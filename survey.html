@@ -48,7 +48,6 @@
     th,td{padding:10px 12px;border-bottom:1px solid var(--stroke);text-align:left;vertical-align:top}
     .kbd{display:inline-flex;padding:4px 8px;border:1px solid var(--stroke);border-radius:10px;background:rgba(255,255,255,.06);font-family:ui-monospace,monospace}
     .hide{display:none}
-    /* крупные клики по кнопкам на мобилках */
     button{min-height:44px}
   </style>
 </head>
@@ -146,7 +145,6 @@
   </section>
 </main>
 
-<!-- Telegram login widget (кнопка появится при нажатии TG в шапке) -->
 <div id="tgWidgetContainer" class="container hide">
   <div class="card">
     <div class="muted" style="margin-bottom:8px">Вход через Telegram</div>
@@ -155,24 +153,36 @@
 </div>
 
 <script type="module">
-  // --- Firebase Auth (Google + Email/Password + Custom Token из Telegram) ---
+  // --- Firebase (модульный SDK) ---
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
   import {
     getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut,
     createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signInWithCustomToken
   } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-  // TODO: ВСТАВЬ СВОЙ КОНФИГ ОТСЮДА (из Firebase Console → Web App)
+  // ✅ ТВОЙ РЕАЛЬНЫЙ КОНФИГ (из сообщения)
   const firebaseConfig = {
-    apiKey: "PASTE_API_KEY",
-    authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
-    projectId: "PASTE_PROJECT_ID",
-    appId: "PASTE_APP_ID"
+    apiKey: "AIzaSyB3uq1X2iVJFk3RdcIl3DIpnjm3y3nUVEw",
+    authDomain: "surveyflow-129a6.firebaseapp.com",
+    projectId: "surveyflow-129a6",
+    storageBucket: "surveyflow-129a6.firebasestorage.app",
+    messagingSenderId: "533639417218",
+    appId: "1:533639417218:web:4cbd520e4b04250464539b"
   };
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+
+  // Безопасная инициализация
+  let app, auth;
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+  } catch (e) {
+    console.error('Firebase init error:', e);
+    alert('Ошибка инициализации Firebase: ' + e.message);
+  }
+
   const googleProvider = new GoogleAuthProvider();
 
+  // --- UI элементы ---
   const userInfo = document.getElementById('userInfo');
   const googleBtn = document.getElementById('googleBtn');
   const emailLoginBtn = document.getElementById('emailLoginBtn');
@@ -181,39 +191,65 @@
   const tgBtn = document.getElementById('tgBtn');
   const logoutBtn = document.getElementById('logoutBtn');
 
-  // === Google sign-in (с фолбэком на redirect, если popup блокируется)
-  googleBtn.onclick = async () => {
+  // --- Google sign-in ---
+  googleBtn?.addEventListener('click', async () => {
     try { await signInWithPopup(auth, googleProvider); }
     catch(e){
-      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') { await signInWithRedirect(auth, googleProvider); }
-      else alert('Ошибка входа: '+e.message);
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        alert('Ошибка входа: '+e.message);
+      }
     }
-  };
+  });
 
-  // === Email/Password ===
-  emailLoginBtn.onclick = async () => {
+  // --- Email/Password ---
+  emailLoginBtn?.addEventListener('click', async () => {
     const email = prompt('Email:');
     const pass = prompt('Пароль:');
     if (!email || !pass) return;
     try { await signInWithEmailAndPassword(auth, email.trim(), pass); }
     catch (e) { alert('Ошибка входа: '+e.message); }
-  };
-  emailRegisterBtn.onclick = async () => {
+  });
+
+  emailRegisterBtn?.addEventListener('click', async () => {
     const email = prompt('Email (регистрация):');
     const pass = prompt('Пароль (мин. 6 символов):');
     if (!email || !pass) return;
     try { await createUserWithEmailAndPassword(auth, email.trim(), pass); alert('Готово! Вы вошли.'); }
     catch (e) { alert('Ошибка регистрации: '+e.message); }
-  };
-  resetBtn.onclick = async () => {
+  });
+
+  resetBtn?.addEventListener('click', async () => {
     const email = prompt('Email для сброса:');
     if (!email) return;
     try { await sendPasswordResetEmail(auth, email.trim()); alert('Письмо отправлено.'); }
     catch (e) { alert('Ошибка: '+e.message); }
-  };
+  });
 
-  // === Telegram (prod): обмен user-пакета на Firebase custom token через backend ===
-  const TELEGRAM_VERIFY_URL = 'https://YOUR_REGION-YOUR_PROJECT.cloudfunctions.net/telegramAuth'; // замените на URL вашей функции
+  // --- Telegram (prod): пока заглушка, активируется после настройки backend URL и имени бота
+  const TELEGRAM_VERIFY_URL = '';
+  const BOT_USERNAME = '';
+
+  tgBtn?.addEventListener('click', () => {
+    if (!BOT_USERNAME || !TELEGRAM_VERIFY_URL) {
+      alert('Telegram ещё не настроен. Сначала пришли мне URL функции и имя бота.');
+      return;
+    }
+    document.getElementById('tgWidgetContainer').classList.remove('hide');
+    const mount = document.getElementById('tgWidgetMount');
+    if (mount.dataset.ready) return;
+    mount.dataset.ready = '1';
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://telegram.org/js/telegram-widget.js?22';
+    s.setAttribute('data-telegram-login', BOT_USERNAME);
+    s.setAttribute('data-size', 'large');
+    s.setAttribute('data-userpic', 'false');
+    s.setAttribute('data-request-access', 'write');
+    s.setAttribute('data-onauth', 'onTelegramAuth(user)');
+    mount.appendChild(s);
+  });
 
   async function signInWithTelegramPayload(tgUserPayload){
     try {
@@ -223,50 +259,23 @@
       await signInWithCustomToken(auth, json.token);
     } catch(e){ alert('Telegram auth error: '+e.message); }
   }
+  window.onTelegramAuth = function(user){ signInWithTelegramPayload(user); }
 
-  // Кнопка «Telegram» показывает виджет и подписывается на событие authorize
-  tgBtn.onclick = () => {
-    document.getElementById('tgWidgetContainer').classList.remove('hide');
-    const mount = document.getElementById('tgWidgetMount');
-    if (mount.dataset.ready) return; // уже встроен
-    mount.dataset.ready = '1';
-    const s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://telegram.org/js/telegram-widget.js?22';
-    s.setAttribute('data-telegram-login', 'YOUR_BOT_USERNAME_WITHOUT_AT'); // <-- замени на имя бота без @
-    s.setAttribute('data-size', 'large');
-    s.setAttribute('data-userpic', 'false');
-    s.setAttribute('data-request-access', 'write');
-    // вместо data-auth-url используем data-onauth → вызовет window.onTelegramAuth
-    s.setAttribute('data-onauth', 'onTelegramAuth(user)');
-    mount.appendChild(s);
-  };
-
-  // Глобальная функция для виджета Telegram
-  window.onTelegramAuth = function(user){
-    // user содержит {id, first_name, username, photo_url?, auth_date, hash}
-    // Отправляем на backend для проверки подписи и получения Firebase custom token
-    signInWithTelegramPayload(user);
-  }
-
-  // === UI state ===
+  // --- UI state ---
   let currentUser = null;
   onAuthStateChanged(auth, user => {
     currentUser = user;
     if (user) {
       userInfo.textContent = user.displayName || user.email || 'Пользователь';
-      googleBtn.classList.add('subtle');
       logoutBtn.classList.remove('hide');
     } else {
       userInfo.textContent = 'Гость';
-      googleBtn.classList.remove('subtle');
       logoutBtn.classList.add('hide');
     }
   });
+  logoutBtn?.addEventListener('click', async () => { await signOut(auth); });
 
-  logoutBtn.onclick = async () => { await signOut(auth); };
-
-  // --- Простая маршрутизация вкладок ---
+  // --- Router ---
   const sections = { create: document.getElementById('create'), take: document.getElementById('take'), results: document.getElementById('results') };
   const tabs = [...document.querySelectorAll('.tab')];
   const takeCode = document.getElementById('takeCode');
@@ -277,9 +286,9 @@
     history.replaceState({}, '', location.pathname + (name==='take' && takeCode.value ? `?take=${takeCode.value}` : name==='results' && resCode.value ? `?results=${resCode.value}` : ''));
     window.scrollTo({ top:0, behavior:'smooth' });
   };
-  tabs.forEach(t => t.onclick = () => setTab(t.dataset.tab));
+  tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
 
-  // --- LocalStorage (демо хранилище) ---
+  // --- LocalStorage (демо) ---
   const LS_SURVEYS = 'surveys_v1';
   const LS_RESP = 'survey_responses_v1';
   const load = (k, f) => { try{ const r = localStorage.getItem(k); return r?JSON.parse(r):f; } catch{ return f; } };
@@ -287,10 +296,10 @@
   const uid = () => Math.random().toString(36).slice(2,8);
   const codeGen = () => Math.random().toString(36).slice(2,8).toUpperCase();
 
-  let surveys = load(LS_SURVEYS, {}); // code -> survey
-  let responses = load(LS_RESP, {}); // code -> [ {by, at, answers: {qid: val}} ]
+  let surveys = load(LS_SURVEYS, {});
+  let responses = load(LS_RESP, {});
 
-  // --- Конструктор опроса ---
+  // --- Builder ---
   const qWrap = document.getElementById('questions');
   const sTitle = document.getElementById('sTitle');
   const sDesc = document.getElementById('sDesc');
@@ -358,11 +367,11 @@
     });
   };
 
-  addQ.onclick = () => { state.questions.push({id:uid(), type:'short_text', text:'Вопрос', required:true, options:['Вариант 1','Вариант 2']}); renderQuestions(); };
+  addQ?.addEventListener('click', () => { state.questions.push({id:uid(), type:'short_text', text:'Вопрос', required:true, options:['Вариант 1','Вариант 2']}); renderQuestions(); });
   // стартовое поле
-  addQ.click();
+  addQ?.click();
 
-  saveSurveyBtn.onclick = () => {
+  saveSurveyBtn?.addEventListener('click', () => {
     if (!currentUser) { alert('Чтобы создавать опросы, войдите.'); return; }
     const code = codeGen();
     const data = { code, title:sTitle.value.trim()||'Без названия', desc:sDesc.value.trim(), questions: JSON.parse(JSON.stringify(state.questions)), createdAt: new Date().toISOString(), owner: currentUser.uid };
@@ -374,9 +383,9 @@
       await navigator.clipboard.writeText(link);
       copyLink.textContent = 'Скопировано!'; setTimeout(()=>copyLink.textContent='Скопировать ссылку',1200);
     };
-  };
+  });
 
-  // --- Прохождение опроса ---
+  // --- Пройти опрос ---
   const loadSurveyBtn = document.getElementById('loadSurvey');
   const takeFormWrap = document.getElementById('takeFormWrap');
   function renderTake(code){
@@ -421,7 +430,7 @@
     };
     takeFormWrap.appendChild(form);
   }
-  loadSurveyBtn.onclick = ()=>{ const c=takeCode.value.trim().toUpperCase(); renderTake(c); };
+  loadSurveyBtn?.addEventListener('click', ()=>{ const c=takeCode.value.trim().toUpperCase(); renderTake(c); });
 
   // URL параметры
   const url = new URL(location.href);
@@ -436,7 +445,7 @@
     const rows = responses[code]||[];
     if(!s){ resTableWrap.classList.add('hide'); return alert('Опрос с таким кодом не найден'); }
     if(!currentUser){ return alert('Войдите'); }
-    // при желании ограничить доступ владельцем: if(s.owner!==currentUser.uid) return alert('Нет доступа');
+    // if(s.owner!==currentUser.uid) return alert('Нет доступа'); // включить при необходимости
 
     resTableWrap.classList.remove('hide');
     let html = `<div class=\"row\" style=\"justify-content:space-between\"><div><div class=\"h\">${s.title}</div><div class=\"muted\">создан: ${new Date(s.createdAt).toLocaleString()}</div></div><span class=\"pill\">Код: <span class=\"kbd\" style=\"margin-left:6px\">${code}</span></span></div>`;
@@ -460,7 +469,7 @@
       const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`survey_${code}_results.csv`; a.click();
     };
   }
-  loadResults.onclick = ()=> renderResults(resCode.value.trim().toUpperCase());
+  loadResults?.addEventListener('click', ()=> renderResults(resCode.value.trim().toUpperCase()));
 
   // Активировать первую вкладку
   setTab('create');
